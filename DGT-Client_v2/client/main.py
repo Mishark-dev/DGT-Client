@@ -35,8 +35,30 @@ def valIP(nodeIP: str):
         print("Invalid IP")
         sys.exit()
 
+def valPort(port: str) -> None:
+    try:
+        port = int(port)
+        if port < 0 or port > 65535: raise ValueError
+    except ValueError:
+        print("Invalid Port. Please enter IP:PORT")
+        sys.exit()
 
-def connect():
+def valArgs(args:list) -> None:
+    try:
+        valid_commands = [ "version" , "connect" , "set" , "inc" ,"dec" , "trans"
+                "show", "list" "execute" , "exit" ]
+        if sys.argv[1].lower() not in valid_commands : raise NameError
+
+        if len(args) < 3 : raise IndexError
+        if sys.argv[1] == "connect" and len(sys.argv) != 3:
+            raise IndexError
+    except IndexError:
+        print("Invalid number of arguments.")
+        sys.exit()
+    except NameError:
+        print("Invalid Command")
+        sys.exit()
+def initIP():
     try:
        connect = sys.argv[1]
        if connect != "connect" : raise NameError
@@ -44,7 +66,12 @@ def connect():
        
        valIP(sys.argv[2])
        
-       config = configparser.ConfigParser()
+       if ":" not in sys.argv[2]:
+           print("Please provide Port")
+           sys.exit()
+
+       valPort(sys.argv[2].split(":",1)[1])
+
        config.add_section("user_info")
        config.set("user_info", "node_ip" , sys.argv[2])
        
@@ -57,14 +84,36 @@ def connect():
     except NameError:
         print('Not connected to any Node, run "bgtc connect"')
         sys.exit()
-   
-#    except OSError:
-#        print("Something went wrong when trying to write to the config file")
-#        sys.exit()
-#
+    except OSError:
+        print("Something went wrong when writing the config file")
+
+def connect(socket:str) -> None:
+    config.read("config/config.ini")
+    user_info = config["user_info"]
+    
+    ip_port=socket.split(":",1)
+    valIP(ip_port[0])
+    valPort(ip_port[1])
+
+    user_info["node_ip"] = socket
+    try:
+        with open("config/config.ini","w") as cf:
+            config.write(cf)
+    except OSError:
+        print("Someting went wrong modifing the config file")
+        sys.exit()
+
 def main():
-    if not os.path.isfile("config/config.ini"):
-        connect()
+    global config
+    config = configparser.ConfigParser()
+    
+    valArgs(sys.argv)
+
+    if not os.path.isfile("config/config.ini"): initIP()
+    
+    if sys.argv[1] == "connect" : connect(sys.argv[2])
+
+
 
 if __name__ == '__main__':
     main()
