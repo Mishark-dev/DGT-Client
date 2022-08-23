@@ -47,18 +47,30 @@ def valPort(port: str) -> None:
 def valArgs(args:list) -> None:
     try:
         valid_commands = [ "version" , "connect" , "set" , "inc" ,"dec" , "trans"
-                "show", "list" "execute" , "exit" ]
-        if sys.argv[1].lower() not in valid_commands : raise NameError
+                "show", "list" "execute" , "exit","key" ]
+        if args[1].lower() not in valid_commands : raise NameError
 
         if len(args) < 3 : raise IndexError
-        if sys.argv[1] == "connect" and len(sys.argv) != 3:
+
+        if args[1] == "connect" and len(args) != 3:
             raise IndexError
+
+        if args[1] in ["dec","inc","set","trans"]:
+            if args[1] != "trans" and len(args) != 5: raise IndexError
+            config.read("config/config.ini")
+            user_info = config["user_info"]
+            global PK_path
+            PK_path = user_info["private_key"]
+                
     except IndexError:
         print("Invalid number of arguments.")
         sys.exit()
     except NameError:
         print("Invalid Command")
         sys.exit()
+    except KeyError:
+        print("No Private Key found, add it with bgtc key [PATH]")
+
 def initIP():
     try:
        connect = sys.argv[1]
@@ -104,6 +116,33 @@ def updateIP(socket:str) -> None:
         print("Someting went wrong modifing the config file")
         sys.exit()
 
+
+def getKey(path: str) -> str :
+    try:
+        with open(path) as f:
+            KF = f.read().strip()
+            f.close()
+        KF = KF.replace("-----BEGIN EC PRIVATE KEY-----","")
+        KF = KF.replace("-----END EC PRIVATE KEY-----" , "")
+        KF= base64.b64decode(KF).hex()
+        return KF
+    except OSError as e:
+        print("Failed to Read Private Key")
+        quit()
+
+def writeKey(path:str ):
+    #We don't do any verifing here, since it should have already been verified
+    #by valArgs and getKey
+    config.read("config/config.ini")
+    
+    if not config.has_option("user_info","pk_path"):
+        config.set("user_info", "pk_path",os.path.abspath(path))
+    else:
+        config["user_info"]["pk_path"] = os.path.abspath(path)
+    with open("config/config.ini","w") as cf:
+        config.write(cf)
+    
+
 def main():
     global config
     config = configparser.ConfigParser()
@@ -112,16 +151,29 @@ def main():
 
     if not os.path.isfile("config/config.ini"): initIP()
     
+    #Perhaps upgarading to Python 3.10 for the match statment is worth it
     if sys.argv[1] == "connect" : 
         updateIP(sys.argv[2])
         nodeIP=sys.argv[2].split(":",1)
+        
+
+        #It's important to note that the socket doesn't stay open after the program exits.
         errno=client.connect(nodeIP[0], int(nodeIP[1]))
+
         if errno != 0 : 
-            print(f"Something went wrong. Errno:{errno}")
+            print(f"Something went wrong. Errno:{errno}") 
             sys.exit()
         print("Sucessfully connected.")
-
-
+        sys.exit()
+    
+    #Sets private key
+    if sys.argv[1] == "key" : 
+        global PK
+        PK= getKey(sys.argv[2])
+        writeKey(sys.argv[2])
+        sys.exit()
+    
+    if sys.argv[1] in ["inc","dec","set","trans"]: pass
 
 if __name__ == '__main__':
     main()
