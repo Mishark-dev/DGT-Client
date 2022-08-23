@@ -25,6 +25,7 @@ import base64
 
 import configparser
 
+import client
 
 def valIP(nodeIP: str):
     try:
@@ -87,7 +88,7 @@ def initIP():
     except OSError:
         print("Something went wrong when writing the config file")
 
-def connect(socket:str) -> None:
+def updateIP(socket:str) -> None:
     config.read("config/config.ini")
     user_info = config["user_info"]
     
@@ -111,7 +112,14 @@ def main():
 
     if not os.path.isfile("config/config.ini"): initIP()
     
-    if sys.argv[1] == "connect" : connect(sys.argv[2])
+    if sys.argv[1] == "connect" : 
+        updateIP(sys.argv[2])
+        nodeIP=sys.argv[2].split(":",1)
+        errno=client.connect(nodeIP[0], int(nodeIP[1]))
+        if errno != 0 : 
+            print(f"Something went wrong. Errno:{errno}")
+            sys.exit()
+        print("Sucessfully connected.")
 
 
 
