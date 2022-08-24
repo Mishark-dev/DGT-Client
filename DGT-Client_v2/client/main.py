@@ -1,28 +1,7 @@
 import sys
-import os
-import os.path
-sys.path.append("../")
-sys.path.append("../dgt_signing")
-
-
-from dgt_signing import create_context
-from dgt_signing import CryptoFactory
-from dgt_sdk.protobuf.transaction_pb2 import TransactionHeader
-from dgt_sdk.protobuf.transaction_pb2 import Transaction
-from dgt_sdk.protobuf.transaction_pb2 import TransactionList
-from dgt_sdk.protobuf.batch_pb2 import BatchList
-from dgt_sdk.protobuf.batch_pb2 import BatchHeader
-from dgt_sdk.protobuf.batch_pb2 import Batch
-
-import json
-import cbor
-from hashlib import sha512
-import random
-import time
-import requests
 import ipaddress as ip
 import base64
-
+import os
 import configparser
 
 import client
@@ -46,9 +25,12 @@ def valPort(port: str) -> None:
 
 def valArgs(args:list) -> None:
     try:
-        valid_commands = [ "version" , "connect" , "set" , "inc" ,"dec" , "trans"
-                "show", "list" "execute" , "exit","key" ]
-        if args[1].lower() not in valid_commands : raise NameError
+
+        valid_commands = [ "version" , "connect" , "set" , "inc" ,"dec" , "trans",
+                "show", "list" , "execute" , "exit","key" ]
+
+        if args[1].lower().strip() not in valid_commands : raise NameError
+
 
         if len(args) < 3 : raise IndexError
 
@@ -56,12 +38,20 @@ def valArgs(args:list) -> None:
             raise IndexError
 
         if args[1] in ["dec","inc","set","trans"]:
-            if args[1] != "trans" and len(args) != 5: raise IndexError
+            if args[1] != "trans" and len(args) != 4 and len(args)!= 5 : raise IndexError
             config.read("config/config.ini")
             user_info = config["user_info"]
             global PK_path
-            PK_path = user_info["private_key"]
-                
+            PK_path = user_info["pk_path"]
+
+            if args[1] != "trans" : 
+                valToken(args[3])
+                if len(args)==5: valWait(args[4])
+            else: 
+                if len(args) != 6 and len(args)!=5 : raise IndexError
+                valToken(args[4])
+                if len(args)==6 : valWait(args[5])
+            
     except IndexError:
         print("Invalid number of arguments.")
         sys.exit()
@@ -119,6 +109,7 @@ def updateIP(socket:str) -> None:
 
 def getKey(path: str) -> str :
     try:
+        print(path)
         with open(path) as f:
             KF = f.read().strip()
             f.close()
@@ -142,6 +133,21 @@ def writeKey(path:str ):
     with open("config/config.ini","w") as cf:
         config.write(cf)
     
+def valWait(wait:str):
+    try:
+        wait=int(wait)
+        if wait <0 or wait > 70: raise ValueError
+    except ValueError:
+        print("Wait must be an integer between 0 and 70")
+        sys.exit()
+
+def valToken(token:str):
+    try:
+        token=int(token)
+        if token <0 or token > 2**32 -1 : raise ValueError
+    except ValueError:
+        print("Token must be a non-negative integer between 0 and 2^32")
+        sys.exit()
 
 def main():
     global config
@@ -169,11 +175,17 @@ def main():
     #Sets private key
     if sys.argv[1] == "key" : 
         global PK
-        PK= getKey(sys.argv[2])
         writeKey(sys.argv[2])
         sys.exit()
     
-    if sys.argv[1] in ["inc","dec","set","trans"]: pass
+    if sys.argv[1] in ["inc","dec","set","trans"]:
+        config.read("config/config.ini")
+        if sys.argv[1] == "trans" : to = sys.argsv[4]
+        else: to = None
+        PK=getKey(PK_path)
+        client.send(config["user_info"]["node_ip"].replace("http://","") \
+                    , sys.argv[1] , sys.argv[2], to , sys.argv[3], PK)
+     
 
 if __name__ == '__main__':
     main()
