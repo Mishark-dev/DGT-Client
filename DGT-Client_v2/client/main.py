@@ -3,7 +3,7 @@ import ipaddress as ip
 import base64
 import os
 import configparser
-
+import time
 import client
 
 def valIP(nodeIP: str):
@@ -177,13 +177,20 @@ def main():
         global PK
         writeKey(sys.argv[2])
         sys.exit()
-    
+    #TODO: Make this not awful
+
     if sys.argv[1] in ["inc","dec","set","trans"]:
         config.read("config/config.ini")
         if sys.argv[1] == "trans" : 
+            if len(sys.argv) == 6:
+                time.sleep(int(sys.argv[5]))
             to = sys.argv[3]
-            val = sys.argv[4]
-        else: to = None
+        else: 
+            if len(sys.argv)==5 :
+                time.sleep(int(sys.argv[4]))
+            to = None
+
+        val = sys.argv[4]
         PK=getKey(PK_path)
         client.send(IP= config["user_info"]["node_ip"].replace("http://","") \
                 , verb =sys.argv[1] , wal = sys.argv[2], value =val, PK=PK, to=to )
