@@ -180,11 +180,13 @@ def main():
     
     if sys.argv[1] in ["inc","dec","set","trans"]:
         config.read("config/config.ini")
-        if sys.argv[1] == "trans" : to = sys.argsv[4]
+        if sys.argv[1] == "trans" : 
+            to = sys.argv[3]
+            val = sys.argv[4]
         else: to = None
         PK=getKey(PK_path)
-        client.send(config["user_info"]["node_ip"].replace("http://","") \
-                    , sys.argv[1] , sys.argv[2], to , sys.argv[3], PK)
+        client.send(IP= config["user_info"]["node_ip"].replace("http://","") \
+                , verb =sys.argv[1] , wal = sys.argv[2], value =val, PK=PK, to=to )
      
 
 if __name__ == '__main__':
