@@ -5,6 +5,8 @@ import os
 import configparser
 import time
 import client
+import version
+
 def valIP(nodeIP: str):
     try:
         nodeIP = nodeIP.replace("http://","")
@@ -20,7 +22,7 @@ def valPort(port: str) -> None:
         if port < 0 or port > 65535: raise ValueError
     except ValueError:
         print("Invalid Port. Please enter IP:PORT")
-        sys.iexit()
+        sys.exit()
 
 def valFile(path:str) -> None:
     try:
@@ -38,7 +40,7 @@ def valArgs(args:list) -> None:
         if args[1].lower().strip() not in valid_commands : raise NameError
 
 
-        if len(args) < 3 and 'list' not in args: raise IndexError
+        if len(args) < 3 and 'list' not in args and 'version' not in args : raise IndexError
 
         if args[1] == "connect" and len(args) != 3:
             raise IndexError
@@ -201,6 +203,15 @@ def main(args:list):
         config.set("user_info","validator_ip",arguments[2])
         with open("config/config.ini","w") as cf:
             config.write(cf)
+
+    if arguments[1] == "version":
+        ns={}
+        with open("version.py") as vf:
+            exec(vf.read(),ns)
+        print(ns['__version__'])
+        sys.exit()
+
+
 
     #Sets private key
     if arguments[1] == "key" : 
