@@ -186,7 +186,6 @@ def main(args:list):
             print(f"Something went wrong. Errno:{errno}") 
             sys.exit()
         print("Sucessfully connected.")
-        sys.exit()
     
     #Sets private key
     if arguments[1] == "key" : 
@@ -197,20 +196,26 @@ def main(args:list):
     if arguments[1] in ["inc","dec","set","trans"]:
         if arguments[1] == "trans" : 
             to = arguments[3]
+            val = arguments[4]
         else: 
             to = None
-        val = arguments[4]
+            val = arguments[3]
         PK=getKey(PK_path)
         client.send(IP= config["user_info"]["node_ip"].replace("http://","") \
                 , verb =arguments[1] , wal = arguments[2], value =val, PK=PK, to=to )
-        sys.exit()
+        return
 
     if arguments[1] == "show" : client.show(config["user_info"]["node_ip"],arguments[2])
 
-    if arguments[1] == "list": client.list(config["user_info"]["node_ip"])
+    #if arguments[1] == "list": client.list(config["user_info"]["node_ip"])
   
 
 if __name__ == '__main__':
-    main(sys.argv)
+    if sys.argv[1] =="execute":
+        file = open(sys.argv[2] , 'r')
+        Lines = file.readlines()
+        for l in Lines:
+            main(l.split(" "))
+    else: main(sys.argv)
 
 
