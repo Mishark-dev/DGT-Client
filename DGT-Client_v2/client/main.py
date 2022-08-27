@@ -38,7 +38,7 @@ def valArgs(args:list) -> None:
         if args[1].lower().strip() not in valid_commands : raise NameError
 
 
-        if len(args) < 3 : raise IndexError
+        if len(args) < 3 and 'list' not in args: raise IndexError
 
         if args[1] == "connect" and len(args) != 3:
             raise IndexError
@@ -223,7 +223,13 @@ def main(args:list):
     if arguments[1] == "show" : client.show(config["user_info"]["node_ip"],arguments[2])
 
     if arguments[1] == "list":
-        client.list(config["user_info"]["node_ip"])
+        config.read("config/config.ini")
+        if not config.has_option("user_info","validator_ip"):
+            print("Validator IP has not been set. Please run the 'validator' command \
+                    followed by the IP of the validator. The deafult validator is \
+                    'tcp://validator-dgt-c1-1:8108' , please consult the documentarion (section 3.2) for how to find the validator ip.")
+            sys.exit()
+        client.List(config["user_info"]["node_ip"].replace("http://",""),config["user_info"]["validator_ip"])
   
 
 if __name__ == '__main__':

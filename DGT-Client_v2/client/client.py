@@ -115,3 +115,13 @@ def show(ip : str, wal: str) -> None:
             }
     response = requests.get(f"http://{ip}/run",params=params)
     print(response.text)
+
+def List(ip:str, val_ip : str) -> None:
+    params ={
+        'family' : 'bgt',
+        'url' : val_ip,
+        'cmd' : 'list'
+            }
+    response = requests.get(f"http://{ip}/run",params=params)
+    print(response.text)
+
