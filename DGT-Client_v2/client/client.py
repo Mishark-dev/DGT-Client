@@ -26,7 +26,6 @@ import requests
 
 def send_request(url, suffix, data = None , content_type = None, name = None):
     headers={}
-    print(f"URL: {url}")
     try:
         headers['Content-Type'] = content_type
         result = requests.post(url, headers= headers , data=data)
@@ -44,7 +43,6 @@ def get_address(name):
     prefix = get_prefix()
     game_address=_sha512(name.encode('utf-8'))[64:]
     return prefix + game_address
-
 
 
 def connect(host:str,port:int) -> bool:
@@ -106,5 +104,14 @@ def send(IP,verb,wal,to,value,PK):
             timestamp = int(time.time())
             )
     batch_list_bytes= BatchList(batches=[batch]).SerializeToString()
+    #Probably better if send_resquest prints in main.py
     print(send_request(URL,"batches",batch_list_bytes,"application/octet-stream"))
 
+def show(ip : str, wal: str) -> None:
+    params = {
+        'family' : 'bgt',
+        'cmd' : 'show',
+        'wallet' : wal
+            }
+    response = requests.get(f"http://{ip}/run",params=params)
+    print(response.text)

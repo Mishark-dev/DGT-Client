@@ -5,7 +5,6 @@ import os
 import configparser
 import time
 import client
-
 def valIP(nodeIP: str):
     try:
         nodeIP = nodeIP.replace("http://","")
@@ -22,10 +21,9 @@ def valPort(port: str) -> None:
     except ValueError:
         print("Invalid Port. Please enter IP:PORT")
         sys.exit()
-
+#TODO: Make this method better, reduce scope of 'if' statments
 def valArgs(args:list) -> None:
     try:
-
         valid_commands = [ "version" , "connect" , "set" , "inc" ,"dec" , "trans",
                 "show", "list" , "execute" , "exit","key" ]
 
@@ -46,11 +44,28 @@ def valArgs(args:list) -> None:
 
             if args[1] != "trans" : 
                 valToken(args[3])
-                if len(args)==5: valWait(args[4])
+                if len(args)==5:
+                    valWait(args[4])
+                    time.sleep(int(args[4]))
             else: 
                 if len(args) != 6 and len(args)!=5 : raise IndexError
+                
                 valToken(args[4])
-                if len(args)==6 : valWait(args[5])
+                if len(args)==6 : 
+                    valWait(args[5])
+                    time.sleep(int(args[5]))
+            
+        if args[1] == "show" :
+            if len(args)!=3 and len(args)!=4 :raise IndexError
+            if len(args) == 4: 
+                valWait(args[3])
+                time.sleep(int(args[3]))
+
+        if args[1] == "list":
+            if len(args)!=2 and len(aegs)!=3: raise IndexError
+            if len(args) == 3:
+                valWait(args[2])
+                time.sleep(int(args[3]))
             
     except IndexError:
         print("Invalid number of arguments.")
@@ -63,20 +78,20 @@ def valArgs(args:list) -> None:
 
 def initIP():
     try:
-       connect = sys.argv[1]
+       connect = arguments[1]
        if connect != "connect" : raise NameError
-       if len(sys.argv) > 3  : raise IndexError
+       if len(arguments) > 3  : raise IndexError
        
-       valIP(sys.argv[2])
+       valIP(arguments[2])
        
-       if ":" not in sys.argv[2]:
+       if ":" not in arguments[2]:
            print("Please provide Port")
            sys.exit()
 
-       valPort(sys.argv[2].split(":",1)[1])
+       valPort(arguments[2].split(":",1)[1])
 
        config.add_section("user_info")
-       config.set("user_info", "node_ip" , sys.argv[2])
+       config.set("user_info", "node_ip" , arguments[2])
        
        if not os.path.isdir("config"): os.makedirs("config") 
        with open("config/config.ini","w") as file:
@@ -149,20 +164,21 @@ def valToken(token:str):
         print("Token must be a non-negative integer between 0 and 2^32")
         sys.exit()
 
-def main():
+def main(args:list):
+    global arguments
+    arguments = args
     global config
     config = configparser.ConfigParser()
     
-    valArgs(sys.argv)
-
+    valArgs(arguments)
     if not os.path.isfile("config/config.ini"): initIP()
-    
-    #Perhaps upgarading to Python 3.10 for the match statment is worth it
-    if sys.argv[1] == "connect" : 
-        updateIP(sys.argv[2])
-        nodeIP=sys.argv[2].split(":",1)
-        
+    config.read("config/config.ini")
 
+    #Perhaps upgarading to Python 3.10 for the match statment is worth it
+    if arguments[1] == "connect" : 
+        updateIP(arguments[2])
+        nodeIP=arguments[2].split(":",1)
+        
         #It's important to note that the socket doesn't stay open after the program exits.
         errno=client.connect(nodeIP[0], int(nodeIP[1]))
 
@@ -173,30 +189,28 @@ def main():
         sys.exit()
     
     #Sets private key
-    if sys.argv[1] == "key" : 
+    if arguments[1] == "key" : 
         global PK
-        writeKey(sys.argv[2])
+        writeKey(arguments[2])
         sys.exit()
-    #TODO: Make this not awful
 
-    if sys.argv[1] in ["inc","dec","set","trans"]:
-        config.read("config/config.ini")
-        if sys.argv[1] == "trans" : 
-            if len(sys.argv) == 6:
-                time.sleep(int(sys.argv[5]))
-            to = sys.argv[3]
+    if arguments[1] in ["inc","dec","set","trans"]:
+        if arguments[1] == "trans" : 
+            to = arguments[3]
         else: 
-            if len(sys.argv)==5 :
-                time.sleep(int(sys.argv[4]))
             to = None
-
-        val = sys.argv[4]
+        val = arguments[4]
         PK=getKey(PK_path)
         client.send(IP= config["user_info"]["node_ip"].replace("http://","") \
-                , verb =sys.argv[1] , wal = sys.argv[2], value =val, PK=PK, to=to )
-     
+                , verb =arguments[1] , wal = arguments[2], value =val, PK=PK, to=to )
+        sys.exit()
+
+    if arguments[1] == "show" : client.show(config["user_info"]["node_ip"],arguments[2])
+
+    if arguments[1] == "list": client.list(config["user_info"]["node_ip"])
+  
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
 
 
