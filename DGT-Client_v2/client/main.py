@@ -20,12 +20,20 @@ def valPort(port: str) -> None:
         if port < 0 or port > 65535: raise ValueError
     except ValueError:
         print("Invalid Port. Please enter IP:PORT")
+        sys.iexit()
+
+def valFile(path:str) -> None:
+    try:
+        f= open (path)
+    except OSError:
+        print("Something went wrong reading the file")
         sys.exit()
+
 #TODO: Make this method better, reduce scope of 'if' statments
 def valArgs(args:list) -> None:
     try:
         valid_commands = [ "version" , "connect" , "set" , "inc" ,"dec" , "trans",
-                "show", "list" , "execute" , "exit","key" ]
+                "show", "list" , "execute" , "exit","key","validator" ]
 
         if args[1].lower().strip() not in valid_commands : raise NameError
 
@@ -122,6 +130,7 @@ def updateIP(socket:str) -> None:
         sys.exit()
 
 
+
 def getKey(path: str) -> str :
     try:
         print(path)
@@ -187,6 +196,12 @@ def main(args:list):
             sys.exit()
         print("Sucessfully connected.")
     
+    if arguments[1] == "validator" :
+        valFile("config/config.ini")
+        config.set("user_info","validator_ip",arguments[2])
+        with open("config/config.ini","w") as cf:
+            config.write(cf)
+
     #Sets private key
     if arguments[1] == "key" : 
         global PK
@@ -207,7 +222,8 @@ def main(args:list):
 
     if arguments[1] == "show" : client.show(config["user_info"]["node_ip"],arguments[2])
 
-    #if arguments[1] == "list": client.list(config["user_info"]["node_ip"])
+    if arguments[1] == "list":
+        client.list(config["user_info"]["node_ip"])
   
 
 if __name__ == '__main__':
